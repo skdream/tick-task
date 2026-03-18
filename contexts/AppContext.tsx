@@ -36,6 +36,7 @@ interface AppContextType {
   editChild: (id: string, name: string, password: string) => Promise<boolean>;
   removeChild: (id: string) => Promise<boolean>;
   refreshData: () => Promise<void>;
+  isOperationLoading: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -47,6 +48,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [starLogs, setStarLogs] = useState<StarLog[]>([]);
   const [totalStars, setTotalStars] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isOperationLoading, setIsOperationLoading] = useState<boolean>(false);
 
   // 刷新数据
   const refreshData = async () => {
@@ -127,47 +129,77 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // 添加任务
   const addTask = async (task: Omit<Task, 'id' | 'createdAt' | 'familyId'>) => {
-    await createTask(task);
-    await refreshData();
+    setIsOperationLoading(true);
+    try {
+      await createTask(task);
+      await refreshData();
+    } finally {
+      setIsOperationLoading(false);
+    }
   };
 
   // 完成任务
   const completeTask = async (taskId: string) => {
-    await updateTaskStatus(taskId, 'completed');
-    await refreshData();
+    setIsOperationLoading(true);
+    try {
+      await updateTaskStatus(taskId, 'completed');
+      await refreshData();
+    } finally {
+      setIsOperationLoading(false);
+    }
   };
 
   // 删除任务
   const removeTask = async (taskId: string) => {
-    await deleteTask(taskId);
-    await refreshData();
+    setIsOperationLoading(true);
+    try {
+      await deleteTask(taskId);
+      await refreshData();
+    } finally {
+      setIsOperationLoading(false);
+    }
   };
 
   // 添加孩子
   const addChildHandler = async (name: string, password: string) => {
-    const success = await addChild(name, password);
-    if (success) {
-      await refreshData();
+    setIsOperationLoading(true);
+    try {
+      const success = await addChild(name, password);
+      if (success) {
+        await refreshData();
+      }
+      return success;
+    } finally {
+      setIsOperationLoading(false);
     }
-    return success;
   };
 
   // 编辑孩子
   const editChildHandler = async (id: string, name: string, password: string) => {
-    const success = await editChild(id, name, password);
-    if (success) {
-      await refreshData();
+    setIsOperationLoading(true);
+    try {
+      const success = await editChild(id, name, password);
+      if (success) {
+        await refreshData();
+      }
+      return success;
+    } finally {
+      setIsOperationLoading(false);
     }
-    return success;
   };
 
   // 删除孩子
   const removeChildHandler = async (id: string) => {
-    const success = await deleteUser(id);
-    if (success) {
-      await refreshData();
+    setIsOperationLoading(true);
+    try {
+      const success = await deleteUser(id);
+      if (success) {
+        await refreshData();
+      }
+      return success;
+    } finally {
+      setIsOperationLoading(false);
     }
-    return success;
   };
 
   // 初始化时检查是否有已登录用户
@@ -194,6 +226,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         starLogs,
         totalStars,
         isLoading,
+        isOperationLoading,
         login,
         register,
         logout,

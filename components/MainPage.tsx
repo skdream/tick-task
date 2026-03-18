@@ -6,6 +6,7 @@ import { useApp } from '@/contexts/AppContext';
 import { routes, getRoutesByRole, getRouteByPath } from '@/config/routes';
 import Navbar from './Navbar';
 import BottomNav from './BottomNav';
+import GlobalLoading from './GlobalLoading';
 
 interface MainPageProps {
   children?: React.ReactNode;
@@ -14,7 +15,7 @@ interface MainPageProps {
 const MainPage: React.FC<MainPageProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const { currentUser } = useApp();
+  const { currentUser, isOperationLoading } = useApp();
   
   // 根据当前用户角色获取可访问的路由
   const availableRoutes = currentUser ? getRoutesByRole(currentUser.role) : routes;
@@ -47,6 +48,9 @@ const MainPage: React.FC<MainPageProps> = ({ children }) => {
         activeRouteId={activeRoute.id} 
         onRouteChange={handleRouteChange} 
       />
+
+      {/* 全局加载提示 */}
+      <GlobalLoading show={isOperationLoading} />
     </div>
   );
 };
