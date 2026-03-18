@@ -28,8 +28,13 @@ const TaskPage: React.FC = () => {
 
   const isParent = currentUser?.role === 'parent';
 
-  // 获取当前家庭中的所有孩子
-  const children = users.filter(user => user.role === 'child' && user.familyId === currentUser?.familyId);
+  // 获取当前家庭中的所有孩子，确保avatar字段存在
+  const children = users
+    .filter(user => user.role === 'child' && user.familyId === currentUser?.familyId)
+    .map(user => ({
+      ...user,
+      avatar: user.avatar || '👦' // 提供默认头像
+    }));
 
   // 如果是家长，默认选择第一个孩子；如果是孩子，只能看到自己的任务
   const filteredTasks = isParent

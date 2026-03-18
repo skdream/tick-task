@@ -12,7 +12,7 @@ interface ManageChildrenModalProps {
   onClose: () => void;
   children: Child[];
   onAddChild: (name: string, password: string) => Promise<void>;
-  onEditChild: (id: string, name: string, pin: string, password: string) => Promise<void>;
+  onEditChild: (id: string, name: string, password: string) => Promise<void>;
   onDeleteChild: (id: string) => Promise<void>;
   isLoading?: boolean;
 }
@@ -31,7 +31,6 @@ const ManageChildrenModal: React.FC<ManageChildrenModalProps> = ({
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [editName, setEditName] = useState('');
-  const [editPin, setEditPin] = useState('');
   const [editPassword, setEditPassword] = useState('');
 
   const handleAdd = async () => {
@@ -50,17 +49,15 @@ const ManageChildrenModal: React.FC<ManageChildrenModalProps> = ({
 
   const handleSaveEdit = async () => {
     if (!editingChildId || !editName.trim()) return;
-    await onEditChild(editingChildId, editName, editPin, editPassword);
+    await onEditChild(editingChildId, editName, editPassword);
     setEditingChildId(null);
     setEditName('');
-    setEditPin('');
     setEditPassword('');
   };
 
   const handleCancelEdit = () => {
     setEditingChildId(null);
     setEditName('');
-    setEditPin('');
     setEditPassword('');
   };
 
