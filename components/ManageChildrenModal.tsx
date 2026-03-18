@@ -45,7 +45,6 @@ const ManageChildrenModal: React.FC<ManageChildrenModalProps> = ({
   const handleEdit = async (child: Child) => {
     setEditingChildId(child.id);
     setEditName(child.name);
-    setEditPin(child.pin);
     setEditPassword(child.password);
   };
 
