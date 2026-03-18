@@ -5,7 +5,7 @@ import { useApp } from '@/contexts/AppContext';
 import { StarLog } from '@/types';
 
 const StarPage: React.FC = () => {
-  const { starLogs, users, currentUser } = useApp();
+  const { starLogs, users, currentUser, tasks } = useApp();
   const isParent = currentUser?.role === 'parent';
   
   // 获取当前家庭中的所有孩子
@@ -135,26 +135,46 @@ const StarPage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {currentUserLogs.map(log => (
-              <div
-                key={log.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="text-2xl text-yellow-500">
-                    ⭐
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-800">
-                      获得 {log.stars} 颗星星
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(log.earnedAt).toLocaleString()}
-                    </p>
+            {currentUserLogs.map(log => {
+              const task = tasks.find(t => t.id === log.taskId);
+              return (
+                <div
+                  key={log.id}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl text-yellow-500">
+                      ⭐
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-800">
+                        获得 {log.stars} 颗星星
+                      </p>
+                      {task && (
+                        <>
+                          <p className="text-sm text-gray-700 mt-1">
+                            任务：{task.title}
+                          </p>
+                          {task.description && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {task.description}
+                            </p>
+                          )}
+                          {task.category && (
+                            <span className="inline-block mt-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded-full">
+                              {task.category}
+                            </span>
+                          )}
+                        </>
+                      )}
+                      <p className="text-xs text-gray-400 mt-2">
+                        {new Date(log.earnedAt).toLocaleString()}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 interface AddTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddTask: (title: string, description: string, stars: number, assignedTo: string) => Promise<void>;
+  onAddTask: (title: string, description: string, category: string, stars: number, assignedTo: string) => Promise<void>;
   isLoading?: boolean;
   children: Array<{ id: string; name: string; avatar?: string }>;
 }
@@ -17,14 +17,18 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('学习');
   const [stars, setStars] = useState(1);
   const [selectedChildId, setSelectedChildId] = useState<string>(children[0]?.id || '');
 
+  const categories = ['学习', '阅读', '家务', '运动', '其他'];
+
   const handleAdd = async () => {
     if (!title.trim() || !selectedChildId) return;
-    await onAddTask(title, description, stars, selectedChildId);
+    await onAddTask(title, description, category, stars, selectedChildId);
     setTitle('');
     setDescription('');
+    setCategory('学习');
     setStars(1);
     setSelectedChildId(children[0]?.id || '');
     onClose();
@@ -33,6 +37,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const handleClose = () => {
     setTitle('');
     setDescription('');
+    setCategory('学习');
     setStars(1);
     setSelectedChildId(children[0]?.id || '');
     onClose();
@@ -99,6 +104,22 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
               placeholder="例如：完成第3章练习题"
               rows={3}
             />
+          </div>
+
+          {/* 任务分类 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              任务分类
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
           </div>
 
           {/* 分配给哪个孩子 */}

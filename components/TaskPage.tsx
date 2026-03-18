@@ -8,9 +8,10 @@ import AddTaskModal from './AddTaskModal';
 import ConfirmDialog from './ConfirmDialog';
 import CelebrationEffect from './CelebrationEffect';
 import StarEffect from './StarEffect';
+import ManageChildrenModal from './ManageChildrenModal';
 
 const TaskPage: React.FC = () => {
-  const { tasks, currentUser, addTask, completeTask, removeTask, isLoading, users } = useApp();
+  const { tasks, currentUser, addTask, completeTask, removeTask, isLoading, users, addChild, editChild, removeChild } = useApp();
   const [showAddTask, setShowAddTask] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
@@ -18,6 +19,12 @@ const TaskPage: React.FC = () => {
   const [showCelebration, setShowCelebration] = useState(false);
   const [showStarEffect, setShowStarEffect] = useState(false);
   const [currentTaskStars, setCurrentTaskStars] = useState<number>(0);
+  const [editingTask, setEditingTask] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editStars, setEditStars] = useState(1);
+  const [showManageChildren, setShowManageChildren] = useState(false);
 
   const isParent = currentUser?.role === 'parent';
 
@@ -77,6 +84,41 @@ const TaskPage: React.FC = () => {
     }
   };
 
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task.id);
+    setEditTitle(task.title);
+    setEditDescription(task.description || '');
+    setEditCategory(task.category || '学习');
+    setEditStars(task.stars);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTask || !editTitle.trim()) return;
+    await addTask({
+      title: editTitle,
+      description: editDescription,
+      category: editCategory,
+      status: 'pending',
+      stars: editStars,
+      createdBy: currentUser!.id,
+      assignedTo: tasks.find(t => t.id === editingTask)?.assignedTo || '',
+    });
+    await removeTask(editingTask);
+    setEditingTask(null);
+    setEditTitle('');
+    setEditDescription('');
+    setEditCategory('学习');
+    setEditStars(1);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTask(null);
+    setEditTitle('');
+    setEditDescription('');
+    setEditCategory('学习');
+    setEditStars(1);
+  };
+
   const pendingTasks = filteredTasks.filter(task => task.status === 'pending');
   const completedTasks = filteredTasks.filter(task => task.status === 'completed');
 
@@ -91,12 +133,20 @@ const TaskPage: React.FC = () => {
             <p className="text-gray-600 mb-6">
               家长可以管理任务，但不需要完成自己的任务。
             </p>
-            <button
-              onClick={() => setShowAddTask(!showAddTask)}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
-            >
-              {showAddTask ? '取消' : '添加任务'}
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowAddTask(!showAddTask)}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                {showAddTask ? '取消' : '添加任务'}
+              </button>
+              <button
+                onClick={() => setShowManageChildren(true)}
+                className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                管理孩子
+              </button>
+            </div>
           </div>
 
           {/* 孩子选择器 */}
@@ -143,35 +193,115 @@ const TaskPage: React.FC = () => {
                           key={task.id}
                           className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow mb-3"
                         >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-gray-800">{task.title}</h3>
-                              {task.description && (
-                                <p className="text-sm text-gray-600 mt-1">{task.description}</p>
-                              )}
-                              <div className="mt-2 flex items-center space-x-2">
-                                <span className="text-yellow-500 font-bold">
-                                  {task.stars} ⭐
-                                </span>
+                          {editingTask === task.id ? (
+                            // 编辑模式
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">标题</label>
+                                <input
+                                  type="text"
+                                  value={editTitle}
+                                  onChange={(e) => setEditTitle(e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
+                                <textarea
+                                  value={editDescription}
+                                  onChange={(e) => setEditDescription(e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  rows={2}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">分类</label>
+                                <select
+                                  value={editCategory}
+                                  onChange={(e) => setEditCategory(e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  {['学习', '阅读', '家务', '运动', '其他'].map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">星星数量</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="10"
+                                  value={editStars}
+                                  onChange={(e) => setEditStars(parseInt(e.target.value))}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                              </div>
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={handleSaveEdit}
+                                  className="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
+                                >
+                                  保存
+                                </button>
+                                <button
+                                  onClick={handleCancelEdit}
+                                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                                >
+                                  取消
+                                </button>
                               </div>
                             </div>
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleCompleteTask(task.id)}
-                                disabled={isLoading}
-                                className="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors"
-                              >
-                                完成
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTask(task.id)}
-                                disabled={isLoading}
-                                className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors"
-                              >
-                                删除
-                              </button>
+                          ) : (
+                            // 查看模式
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-gray-800">{task.title}</h3>
+                                {task.description && (
+                                  <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                                )}
+                                <div className="mt-2 flex items-center space-x-2">
+                                  {task.category && (
+                                    <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">
+                                      {task.category}
+                                    </span>
+                                  )}
+                                  <span className="text-yellow-500 font-bold">
+                                    {task.stars} ⭐
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex space-x-2">
+                                {!isParent && (
+                                  <button
+                                    onClick={() => handleCompleteTask(task.id)}
+                                    disabled={isLoading}
+                                    className="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors"
+                                  >
+                                    完成
+                                  </button>
+                                )}
+                                {isParent && (
+                                  <button
+                                    onClick={() => handleEditTask(task)}
+                                    disabled={isLoading}
+                                    className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors"
+                                  >
+                                    编辑
+                                  </button>
+                                )}
+                                {isParent && (
+                                  <button
+                                    onClick={() => handleDeleteTask(task.id)}
+                                    disabled={isLoading}
+                                    className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors"
+                                  >
+                                    删除
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -217,10 +347,11 @@ const TaskPage: React.FC = () => {
           <AddTaskModal
             isOpen={showAddTask}
             onClose={() => setShowAddTask(false)}
-            onAddTask={async (title, description, stars, assignedTo) => {
+            onAddTask={async (title, description, category, stars, assignedTo) => {
               await addTask({
                 title,
                 description,
+                category,
                 status: 'pending',
                 stars,
                 createdBy: currentUser!.id,
@@ -240,6 +371,22 @@ const TaskPage: React.FC = () => {
             show={showStarEffect}
             starsCount={currentTaskStars}
             onComplete={() => setShowStarEffect(false)}
+          />
+
+          <ManageChildrenModal
+            isOpen={showManageChildren}
+            onClose={() => setShowManageChildren(false)}
+            children={children}
+            onAddChild={async (name, password) => {
+              await addChild(name, password);
+            }}
+            onEditChild={async (id, name, password) => {
+              await editChild(id, name, password);
+            }}
+            onDeleteChild={async (id) => {
+              await removeChild(id);
+            }}
+            isLoading={isLoading}
           />
 
           <ConfirmDialog

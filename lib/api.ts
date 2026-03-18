@@ -50,6 +50,45 @@ export const getFamilies = async (): Promise<ApiResponse<Family[]>> => {
   return { data: mockFamilies };
 };
 
+// 注册新家庭
+export const registerFamily = async (
+  familyName: string,
+  email: string,
+  pin: string,
+  userName: string,
+  password: string,
+  role: 'parent' | 'child'
+): Promise<boolean> => {
+  // 检查邮箱是否已存在
+  const existingFamily = mockFamilies.find(f => f.email === email);
+  if (existingFamily) {
+    return false;
+  }
+
+  // 创建新家庭
+  const newFamily: Family = {
+    id: `family${Date.now()}`,
+    name: familyName,
+    email,
+    pin,
+    createdAt: new Date(),
+  };
+  mockFamilies.push(newFamily);
+
+  // 创建用户（不包含pin字段）
+  const newUser: User = {
+    id: `user${Date.now()}`,
+    name: userName,
+    role,
+    familyId: newFamily.id,
+    avatar: role === 'parent' ? '👨‍👩‍👧' : '👦',
+    password,
+  };
+  mockUsers.push(newUser);
+
+  return true;
+};
+
 // 获取家庭成员
 export const getFamilyMembers = async (familyId?: string): Promise<ApiResponse<User[]>> => {
   // 如果提供了familyId，直接使用
@@ -66,6 +105,63 @@ export const getFamilyMembers = async (familyId?: string): Promise<ApiResponse<U
 
   const members = mockUsers.filter(user => user.familyId === user.familyId);
   return { data: members };
+};
+
+// 添加孩子
+export const addChild = async (name: string, password: string): Promise<boolean> => {
+  const currentUser = getCurrentUser();
+  if (!currentUser || currentUser.role !== 'parent') {
+    return false;
+  }
+
+  const newChild: User = {
+    id: `user${Date.now()}`,
+    name,
+    role: 'child',
+    familyId: currentUser.familyId,
+    avatar: '👦',
+    password,
+  };
+
+  mockUsers.push(newChild);
+  return true;
+};
+
+// 编辑孩子
+export const editChild = async (id: string, name: string, password: string): Promise<boolean> => {
+  const currentUser = getCurrentUser();
+  if (!currentUser || currentUser.role !== 'parent') {
+    return false;
+  }
+
+  const childIndex = mockUsers.findIndex(u => u.id === id && u.familyId === currentUser.familyId);
+  if (childIndex === -1) {
+    return false;
+  }
+
+  mockUsers[childIndex] = {
+    ...mockUsers[childIndex],
+    name,
+    password,
+  };
+
+  return true;
+};
+
+// 删除孩子
+export const deleteChild = async (id: string): Promise<boolean> => {
+  const currentUser = getCurrentUser();
+  if (!currentUser || currentUser.role !== 'parent') {
+    return false;
+  }
+
+  const childIndex = mockUsers.findIndex(u => u.id === id && u.familyId === currentUser.familyId);
+  if (childIndex === -1) {
+    return false;
+  }
+
+  mockUsers.splice(childIndex, 1);
+  return true;
 };
 
 // 获取任务列表

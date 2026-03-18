@@ -7,7 +7,6 @@ export interface User {
   role: UserRole;
   familyId: string;
   avatar?: string;
-  pin?: string;
   password?: string;
 }
 
@@ -18,6 +17,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
+  category?: string;
   status: TaskStatus;
   stars: number;
   createdAt: Date;

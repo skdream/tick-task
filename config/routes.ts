@@ -6,22 +6,41 @@ export interface RouteConfig {
   path: string;
   label: string;
   icon: string;
-  component: React.ComponentType;
+  // component: React.ComponentType;
   roles?: ('parent' | 'child')[]; // 允许访问的角色，不设置则允许所有角色
 }
 
 // 导入页面组件
+import LoginPage from '@/components/LoginPage';
+import RegisterPage from '@/components/RegisterPage';
 import TaskPage from '@/components/TaskPage';
 import StarPage from '@/components/StarPage';
 
 // 路由配置
 export const routes: RouteConfig[] = [
   {
+    id: 'login',
+    path: '/login',
+    label: '登录',
+    icon: '🔐',
+    roles: [],
+    // component: LoginPage,
+  },
+  {
+    id: 'register',
+    path: '/register',
+    label: '注册',
+    icon: '📝',
+    roles: [],
+    // component: RegisterPage,
+  },
+  {
     id: 'tasks',
     path: '/tasks',
     label: '目标',
     icon: '🎯',
-    component: TaskPage,
+    roles: ['parent', 'child'],
+    // component: TaskPage,
     // 家长和孩子都可以访问任务页面
   },
   {
@@ -29,7 +48,8 @@ export const routes: RouteConfig[] = [
     path: '/stars',
     label: '星星',
     icon: '⭐',
-    component: StarPage,
+    roles: ['parent', 'child'],
+    // component: StarPage,
   },
 ];
 

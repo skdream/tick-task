@@ -12,8 +12,12 @@ import {
   getStarLogs,
   getUserTotalStars,
   getFamilyMembers,
-  getFamilies
-} from '@/lib/api';
+  getFamilies,
+  registerFamily,
+  addChild,
+  editChild,
+  deleteChild as deleteUser
+} from '@/lib/db';
 
 interface AppContextType {
   currentUser: User | null;
@@ -23,10 +27,14 @@ interface AppContextType {
   totalStars: number;
   isLoading: boolean;
   login: (email: string, pin: string, password: string, role: 'parent' | 'child') => Promise<boolean>;
+  register: (familyName: string, email: string, pin: string, userName: string, password: string, role: 'parent' | 'child') => Promise<boolean>;
   logout: () => void;
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'familyId'>) => Promise<void>;
   completeTask: (taskId: string) => Promise<void>;
   removeTask: (taskId: string) => Promise<void>;
+  addChild: (name: string, password: string) => Promise<boolean>;
+  editChild: (id: string, name: string, password: string) => Promise<boolean>;
+  removeChild: (id: string) => Promise<boolean>;
   refreshData: () => Promise<void>;
 }
 
@@ -86,15 +94,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return false;
     }
 
+    // 保存家庭PIN码到localStorage
+    localStorage.setItem('familyPin', pin);
+
     setCurrentUser(user);
     setCurrentUserState(user);
     await refreshData();
     return true;
   };
 
+  // 注册
+  const register = async (familyName: string, email: string, pin: string, userName: string, password: string, role: 'parent' | 'child') => {
+    const success = await registerFamily(familyName, email, pin, userName, password, role);
+    if (success) {
+      // 注册成功后自动登录
+      await login(email, pin, password, role);
+    }
+    return success;
+  };
+
   // 登出
   const logout = () => {
-    setCurrentUser(null);
+    // setCurrentUser(null);
     setCurrentUserState(null);
     setTasks([]);
     setStarLogs([]);
@@ -122,6 +143,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await refreshData();
   };
 
+  // 添加孩子
+  const addChildHandler = async (name: string, password: string) => {
+    const success = await addChild(name, password);
+    if (success) {
+      await refreshData();
+    }
+    return success;
+  };
+
+  // 编辑孩子
+  const editChildHandler = async (id: string, name: string, password: string) => {
+    const success = await editChild(id, name, password);
+    if (success) {
+      await refreshData();
+    }
+    return success;
+  };
+
+  // 删除孩子
+  const removeChildHandler = async (id: string) => {
+    const success = await deleteUser(id);
+    if (success) {
+      await refreshData();
+    }
+    return success;
+  };
+
   // 初始化时检查是否有已登录用户
   useEffect(() => {
     const user = getCurrentUser();
@@ -147,10 +195,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         totalStars,
         isLoading,
         login,
+        register,
         logout,
         addTask,
         completeTask,
         removeTask,
+        addChild: addChildHandler,
+        editChild: editChildHandler,
+        removeChild: removeChildHandler,
         refreshData,
       }}
     >
