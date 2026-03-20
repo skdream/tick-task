@@ -134,18 +134,19 @@ const ManageChildrenModal: React.FC<ManageChildrenModalProps> = ({
                 />
               </div>
               <div className="flex space-x-2">
+
+                <button
+                  onClick={handleCancelAdd}
+                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  取消
+                </button>
                 <button
                   onClick={handleAdd}
                   disabled={isLoading || !name.trim() || !password}
                   className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors"
                 >
                   添加
-                </button>
-                <button
-                  onClick={handleCancelAdd}
-                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  取消
                 </button>
               </div>
             </div>
@@ -183,18 +184,19 @@ const ManageChildrenModal: React.FC<ManageChildrenModalProps> = ({
                         />
                       </div>
                       <div className="flex space-x-2">
+        
+                        <button
+                          onClick={handleCancelEdit}
+                          className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                        >
+                          取消
+                        </button>
                         <button
                           onClick={handleSaveEdit}
                           disabled={isLoading || !editName.trim()}
                           className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors"
                         >
                           保存
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
-                        >
-                          取消
                         </button>
                       </div>
                     </div>

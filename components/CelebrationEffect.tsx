@@ -15,7 +15,7 @@ const CelebrationEffect: React.FC<CelebrationEffectProps> = ({ show, onComplete 
     if (show) {
       // 生成随机粒子（星星和礼花）
       const emojis = ['⭐', '🎉', '✨', '🎊', '💫', '🌟'];
-      const newParticles = Array.from({ length: 20 }, (_, i) => ({
+      const newParticles = Array.from({ length: 10 }, (_, i) => ({
         id: Date.now() + i,
         x: 20+Math.random() * 50,
         y: 20+Math.random() * 50,
@@ -59,7 +59,7 @@ const CelebrationEffect: React.FC<CelebrationEffectProps> = ({ show, onComplete 
         </div>
       ))}
 
-      <style jsx>{`
+      <style>{`
         @keyframes particle-burst {
           0% {
             transform: scale(0) rotate(0deg);

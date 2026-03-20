@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
 import { routes, getRoutesByRole, getRouteByPath } from '@/config/routes';
@@ -23,6 +23,13 @@ const MainPage: React.FC<MainPageProps> = ({ children }) => {
   // 根据当前路径获取活动路由
   const activeRoute = getRouteByPath(pathname) || availableRoutes[0];
 
+  // 监听路由变化，更新页面标题
+  useEffect(() => {
+    if (activeRoute) {
+      document.title = `${activeRoute.label}`;
+    }
+  }, [activeRoute]);
+
   // 处理路由切换
   const handleRouteChange = (routeId: string) => {
     const route = availableRoutes.find(r => r.id === routeId);
@@ -35,9 +42,9 @@ const MainPage: React.FC<MainPageProps> = ({ children }) => {
     <div className="min-h-screen bg-gray-50 pb-20">
       <Navbar />
       
-      <div className="max-w-4xl mx-auto p-4">
+      <div className="max-w-4xl mx-auto p-2">
         {/* 内容区域 */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-md">
           {children}
         </div>
       </div>

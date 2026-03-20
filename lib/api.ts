@@ -165,13 +165,22 @@ export const deleteChild = async (id: string): Promise<boolean> => {
 };
 
 // 获取任务列表
-export const getTasks = async (): Promise<ApiResponse<Task[]>> => {
+export const getTasks = async (dateFilter?: Date): Promise<ApiResponse<Task[]>> => {
   const user = getCurrentUser();
   if (!user) {
     throw new Error('未登录');
   }
 
-  const tasks = mockTasks.filter(task => task.familyId === user.familyId);
+  let tasks = mockTasks.filter(task => task.familyId === user.familyId);
+
+  // 如果提供了日期过滤条件，则只返回该日期的任务
+  if (dateFilter) {
+    const dateStr = dateFilter.toISOString().split('T')[0];
+    tasks = tasks.filter(task => {
+      return task.taskDate === dateStr;
+    });
+  }
+
   return { data: tasks };
 };
 
@@ -191,6 +200,7 @@ export const createTask = async (task: Omit<Task, 'id' | 'createdAt' | 'familyId
     id: `task${Date.now()}`,
     createdAt: new Date(),
     familyId: user.familyId,
+    taskDate: task.taskDate || new Date().toISOString().split('T')[0],
   };
 
   mockTasks.push(newTask);

@@ -37,8 +37,8 @@ export const routes: RouteConfig[] = [
   {
     id: 'tasks',
     path: '/tasks',
-    label: '目标',
-    icon: '🎯',
+    label: '任务',
+    icon: '📅',
     roles: ['parent', 'child'],
     // component: TaskPage,
     // 家长和孩子都可以访问任务页面

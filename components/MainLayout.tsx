@@ -12,12 +12,12 @@ interface BottomNavRoute {
   icon: string;
 }
 
-// 底部导航的路由配置（只显示目标和星星）
+// 底部导航的路由配置（只显示任务和星星）
 const bottomNavRoutes: BottomNavRoute[] = [
   {
     id: 'tasks',
     path: '/tasks',
-    label: '目标',
+    label: '任务',
     icon: '🎯',
   },
   {

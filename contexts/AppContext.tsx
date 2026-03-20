@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Task, StarLog } from '@/types';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { User, Task, StarLog ,ApiResponse} from '@/types';
 import {
   getCurrentUser,
   setCurrentUser,
@@ -10,7 +10,7 @@ import {
   updateTaskStatus,
   deleteTask,
   getStarLogs,
-  getUserTotalStars,
+  getUserTotalStars as getUserTotalStarsFromDB,
   getFamilyMembers,
   getFamilies,
   registerFamily,
@@ -29,13 +29,16 @@ interface AppContextType {
   login: (email: string, pin: string, password: string, role: 'parent' | 'child') => Promise<boolean>;
   register: (familyName: string, email: string, pin: string, userName: string, password: string, role: 'parent' | 'child') => Promise<boolean>;
   logout: () => void;
-  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'familyId'>) => Promise<void>;
-  completeTask: (taskId: string) => Promise<void>;
+  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'familyId'>, dateFilter?: Date) => Promise<void>;
+  completeTask: (taskId: string, dateFilter?: Date) => Promise<void>;
+  updateTaskStatus: (taskId: string, status: 'pending' | 'completed', dateFilter?: Date) => Promise<void>;
   removeTask: (taskId: string) => Promise<void>;
   addChild: (name: string, password: string) => Promise<boolean>;
   editChild: (id: string, name: string, password: string) => Promise<boolean>;
   removeChild: (id: string) => Promise<boolean>;
-  refreshData: () => Promise<void>;
+  refreshData: (dateFilter?: Date) => Promise<void>;
+  getStarLogsPaginated: (userId?: string, page?: number, pageSize?: number) => Promise<{ data: StarLog[]; total: number; page: number; pageSize: number }>;
+  getUserTotalStars: (userId?: string) => Promise<ApiResponse<number>>;
   isOperationLoading: boolean;
 }
 
@@ -51,21 +54,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isOperationLoading, setIsOperationLoading] = useState<boolean>(false);
 
   // 刷新数据
-  const refreshData = async () => {
+  const refreshData = async (dateFilter?: Date) => {
     const user = getCurrentUser();
     if (!user) return;
 
     setIsLoading(true);
     try {
       const [tasksRes, logsRes, starsRes, usersRes] = await Promise.all([
-        getTasks(),
+        getTasks(dateFilter),
         getStarLogs(),
-        getUserTotalStars(),
+        getUserTotalStarsFromDB(),
         getFamilyMembers()
       ]);
 
       setTasks(tasksRes.data);
-      setStarLogs(logsRes.data);
+      setStarLogs(logsRes.data.data);
       setTotalStars(starsRes.data);
       setUsers(usersRes.data);
     } catch (error) {
@@ -74,6 +77,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setIsLoading(false);
     }
   };
+
+  // 获取分页的星星日志
+  const getStarLogsPaginated = useCallback(async (
+    userId?: string,
+    page: number = 1,
+    pageSize: number = 10
+  ): Promise<{ data: StarLog[]; total: number; page: number; pageSize: number }> => {
+    const result = await getStarLogs(userId, page, pageSize);
+    return result.data;
+  }, []);
 
   // 登录
   const login = async (email: string, pin: string, password: string, role: 'parent' | 'child') => {
@@ -128,33 +141,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // 添加任务
-  const addTask = async (task: Omit<Task, 'id' | 'createdAt' | 'familyId'>) => {
+  const addTask = async (task: Omit<Task, 'id' | 'createdAt' | 'familyId'>, dateFilter?: Date) => {
     setIsOperationLoading(true);
     try {
       await createTask(task);
-      await refreshData();
+      await refreshData(dateFilter);
     } finally {
       setIsOperationLoading(false);
     }
   };
 
   // 完成任务
-  const completeTask = async (taskId: string) => {
+  const completeTask = async (taskId: string, dateFilter?: Date) => {
     setIsOperationLoading(true);
     try {
       await updateTaskStatus(taskId, 'completed');
-      await refreshData();
+      await refreshData(dateFilter);
+    } finally {
+      setIsOperationLoading(false);
+    }
+  };
+
+  // 更新任务状态
+  const updateTaskStatusHandler = async (taskId: string, status: 'pending' | 'completed', dateFilter?: Date) => {
+    setIsOperationLoading(true);
+    try {
+      await updateTaskStatus(taskId, status);
+      await refreshData(dateFilter);
     } finally {
       setIsOperationLoading(false);
     }
   };
 
   // 删除任务
-  const removeTask = async (taskId: string) => {
+  const removeTask = async (taskId: string, dateFilter?: Date) => {
     setIsOperationLoading(true);
     try {
       await deleteTask(taskId);
-      await refreshData();
+      await refreshData(dateFilter);
     } finally {
       setIsOperationLoading(false);
     }
@@ -232,11 +256,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         logout,
         addTask,
         completeTask,
+        updateTaskStatus: updateTaskStatusHandler,
         removeTask,
         addChild: addChildHandler,
         editChild: editChildHandler,
         removeChild: removeChildHandler,
         refreshData,
+        getStarLogsPaginated,
+        getUserTotalStars: useCallback(async (userId?: string) => {
+          return await getUserTotalStarsFromDB(userId);
+        }, []),
       }}
     >
       {children}

@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Picker } from 'antd-mobile';
 
 interface AddTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddTask: (title: string, description: string, category: string, stars: number, assignedTo: string) => Promise<void>;
+  onAddTask: (title: string, description: string, category: string, stars: number, assignedTo: string, taskDate: string) => Promise<void>;
   isLoading?: boolean;
   children: Array<{ id: string; name: string; avatar?: string }>;
+  selectedDate?: Date;
 }
 
 const AddTaskModal: React.FC<AddTaskModalProps> = ({
@@ -14,23 +16,50 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   onAddTask,
   isLoading = false,
   children,
+  selectedDate = new Date(),
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('学习');
   const [stars, setStars] = useState(1);
-  const [selectedChildId, setSelectedChildId] = useState<string>(children[0]?.id || '');
+  const [selectedChildId, setSelectedChildId] = useState<string>('');
+  const [taskDate, setTaskDate] = useState<Date>(selectedDate);
+
+  // 当children数据加载完成后，自动设置selectedChildId为第一个孩子的ID
+  useEffect(() => {
+    if (children.length > 0 && !selectedChildId) {
+      setSelectedChildId(children[0].id);
+    }
+  }, [children, selectedChildId]);
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
 
   const categories = ['学习', '阅读', '家务', '运动', '其他'];
 
+  // 生成日期列数据
+  const now = new Date();
+  const years = Array.from({ length: 10 }, (_, i) => now.getFullYear() - 5 + i).map(year => ({
+    label: `${year}年`,
+    value: year,
+  }));
+  const months = Array.from({ length: 12 }, (_, i) => ({
+    label: `${i + 1}月`,
+    value: i + 1,
+  }));
+  const days = Array.from({ length: 31 }, (_, i) => ({
+    label: `${i + 1}日`,
+    value: i + 1,
+  }));
+
   const handleAdd = async () => {
     if (!title.trim() || !selectedChildId) return;
-    await onAddTask(title, description, category, stars, selectedChildId);
+    const taskDateStr = taskDate.toISOString().split('T')[0];
+    await onAddTask(title, description, category, stars, selectedChildId, taskDateStr);
     setTitle('');
     setDescription('');
     setCategory('学习');
     setStars(1);
     setSelectedChildId(children[0]?.id || '');
+    setTaskDate(selectedDate);
     onClose();
   };
 
@@ -40,6 +69,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
     setCategory('学习');
     setStars(1);
     setSelectedChildId(children[0]?.id || '');
+    setTaskDate(selectedDate);
     onClose();
   };
 
@@ -56,7 +86,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
       {/* 弹窗内容 */}
       <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 z-10">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">添加新目标</h2>
+          <h2 className="text-xl font-bold text-gray-900">添加新任务</h2>
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -78,10 +108,10 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
         </div>
 
         <div className="space-y-4">
-          {/* 目标标题 */}
+          {/* 任务标题 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              目标标题
+              任务标题
             </label>
             <input
               type="text"
@@ -92,10 +122,33 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
             />
           </div>
 
-          {/* 目标描述 */}
+          {/* 任务日期 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              目标描述（可选）
+              任务日期
+            </label>
+            <button
+              onClick={() => setDatePickerVisible(true)}
+              className="w-full border rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-left"
+            >
+              {taskDate.toISOString().split('T')[0]}
+            </button>
+            <Picker
+              columns={[years, months, days]}
+              visible={datePickerVisible}
+              onClose={() => setDatePickerVisible(false)}
+              value={[taskDate.getFullYear(), taskDate.getMonth() + 1, taskDate.getDate()]}
+              onConfirm={(value) => {
+                setTaskDate(new Date(value[0], value[1] - 1, value[2]));
+                setDatePickerVisible(false);
+              }}
+            />
+          </div>
+
+          {/* 任务描述 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              任务描述（可选）
             </label>
             <textarea
               value={description}
@@ -173,7 +226,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
               disabled={isLoading || !title.trim()}
               className="flex-1 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-300 text-white rounded-lg transition-colors"
             >
-              添加目标
+              添加任务
             </button>
           </div>
         </div>

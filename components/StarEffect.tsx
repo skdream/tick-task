@@ -13,17 +13,18 @@ const StarEffect: React.FC<StarEffectProps> = ({ show, onComplete, starsCount })
   const [stars, setStars] = useState<Array<{ id: number; x: number; y: number; delay: number }>>([]);
 
   useEffect(() => {
+    console.log('StarEffect - show:', show, 'starsCount:', starsCount);
     if (show) {
       // 生成随机星星，限制在页面中间区域
-      // const newStars = Array.from({ length: 2 }, (_, i) => ({
-      //   id: Date.now() + i,
-      //   // 限制星星在水平方向上显示在中间50%的区域
-      //   x: 10 + Math.random() * 10,
-      //   // 限制星星在垂直方向上显示在中间50%的区域
-      //   y: 10 + Math.random() * 10,
-      //   delay: Math.random() * 0.5,
-      // }));
-      // setStars(newStars);
+      const newStars = Array.from({ length: 10 }, (_, i) => ({
+        id: Date.now() + i,
+        // 限制星星在水平方向上显示在中间50%的区域
+        x: 25 + Math.random() * 50,
+        // 限制星星在垂直方向上显示在中间50%的区域
+        y: 25 + Math.random() * 50,
+        delay: Math.random() * 0.5,
+      }));
+      setStars(newStars);
 
       // 2秒后完成动画
       const timer = setTimeout(() => {
@@ -32,14 +33,17 @@ const StarEffect: React.FC<StarEffectProps> = ({ show, onComplete, starsCount })
 
       return () => clearTimeout(timer);
     }
-  }, [show, onComplete]);
+  }, [show, onComplete, starsCount]);
 
   if (!show) return null;
+
+  console.log('StarEffect - 渲染中，show:', show, 'starsCount:', starsCount);
 
   return (
     <div className="fixed inset-0 pointer-events-none z-50">
       {/* 显示获得的星星数量 */}
-      {starsCount !== undefined && (
+      {console.log('StarEffect - starsCount:', starsCount, 'starsCount > 0:', starsCount > 0)}
+      {starsCount !== undefined && starsCount > 0 && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-4xl md:text-6xl font-bold text-yellow-500 animate-bounce">
             +{starsCount} ⭐
@@ -59,7 +63,7 @@ const StarEffect: React.FC<StarEffectProps> = ({ show, onComplete, starsCount })
           <div className="text-4xl animate-star-pulse">⭐</div>
         </div>
       ))} */}
-      <style jsx>{`
+      <style>{`
         @keyframes star-burst {
           0% {
             transform: scale(0) rotate(0deg);

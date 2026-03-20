@@ -9,9 +9,12 @@ import ConfirmDialog from './ConfirmDialog';
 import CelebrationEffect from './CelebrationEffect';
 import StarEffect from './StarEffect';
 import ManageChildrenModal from './ManageChildrenModal';
+import { Picker } from 'antd-mobile';
+import dayjs from 'dayjs';
+
 
 const TaskPage: React.FC = () => {
-  const { tasks, currentUser, addTask, completeTask, removeTask, isLoading, users, addChild, editChild, removeChild } = useApp();
+  const { tasks, currentUser, addTask, completeTask, updateTaskStatus, removeTask, isLoading, users, addChild, editChild, removeChild, refreshData } = useApp();
   const [showAddTask, setShowAddTask] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
@@ -24,9 +27,30 @@ const TaskPage: React.FC = () => {
   const [editDescription, setEditDescription] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editStars, setEditStars] = useState(1);
+  const [editTaskDate, setEditTaskDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [editDatePickerVisible, setEditDatePickerVisible] = useState(false);
   const [showManageChildren, setShowManageChildren] = useState(false);
+  const [justCompletedTask, setJustCompletedTask] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [parentDatePickerVisible, setParentDatePickerVisible] = useState(false);
+  const [childDatePickerVisible, setChildDatePickerVisible] = useState(false);
 
   const isParent = currentUser?.role === 'parent';
+
+  // 生成日期列数据
+  const now = new Date();
+  const years = Array.from({ length: 10 }, (_, i) => now.getFullYear() - 5 + i).map(year => ({
+    label: `${year}年`,
+    value: year,
+  }));
+  const months = Array.from({ length: 12 }, (_, i) => ({
+    label: `${i + 1}月`,
+    value: i + 1,
+  }));
+  const days = Array.from({ length: 31 }, (_, i) => ({
+    label: `${i + 1}日`,
+    value: i + 1,
+  }));
 
   // 获取当前家庭中的所有孩子，确保avatar和password字段存在
   const children = users
@@ -43,7 +67,7 @@ const TaskPage: React.FC = () => {
     ? selectedChildId
       ? tasks.filter(task => task.assignedTo === selectedChildId && task.familyId === currentUser?.familyId)
       : tasks.filter(task => task.familyId === currentUser?.familyId)
-    : tasks.filter(task => task.assignedTo === currentUser?.id);
+    : tasks.filter(task => task.assignedTo === currentUser?.id && task.familyId === currentUser?.familyId);
 
   // 初始化选中的孩子
   useEffect(() => {
@@ -52,29 +76,88 @@ const TaskPage: React.FC = () => {
     }
   }, [isParent, children, selectedChildId]);
 
+  // 初始化时刷新数据
+  useEffect(() => {
+    if (currentUser) {
+      refreshData(selectedDate);
+    }
+  }, [currentUser]);
+
+  // 当selectedDate变化时刷新数据
+  useEffect(() => {
+    refreshData(selectedDate);
+  }, [selectedDate]);
+
   // 添加调试日志
   useEffect(() => {
-    console.log('当前用户:', currentUser);
-    console.log('所有任务:', tasks);
-    console.log('过滤后的任务:', filteredTasks);
-  }, [currentUser, tasks, filteredTasks]);
+    console.log('=== 任务状态调试 ===');
+    console.log('当前用户:', currentUser?.id, currentUser?.name, currentUser?.role);
+    console.log('所有任务数量:', tasks.length);
+    console.log('过滤后的任务数量:', filteredTasks.length);
+    console.log('待完成任务:', filteredTasks.filter(task => task.status === 'pending').map(t => ({id: t.id, title: t.title, status: t.status})));
+    console.log('已完成任务:', filteredTasks.filter(task => task.status === 'completed').map(t => ({id: t.id, title: t.title, status: t.status})));
+    console.log('showCelebration状态:', showCelebration);
+    console.log('showStarEffect状态:', showStarEffect);
+    console.log('===================');
+  }, [currentUser, tasks, filteredTasks, showCelebration, showStarEffect]);
+
+  // 监听任务状态变化，当所有任务都完成时显示庆祝效果
+  useEffect(() => {
+    const pendingTasks = filteredTasks.filter(task => task.status === 'pending');
+    console.log('检查庆祝效果条件:', {
+      pendingTasksCount: pendingTasks.length,
+      filteredTasksCount: filteredTasks.length,
+      showStarEffect,
+      showCelebration,
+      isParent,
+      justCompletedTask
+    });
+
+    // 只有当有任务且所有任务都已完成，并且当前没有显示庆祝效果时才触发
+    // 注意：只有孩子完成所有任务时才显示庆祝效果，家长不需要
+    // 并且只有在刚刚完成任务时才显示庆祝效果，而不是在页面加载时
+    if (pendingTasks.length === 0 && filteredTasks.length > 0 && !showCelebration && !isParent && justCompletedTask) {
+      console.log('所有任务已完成，准备显示庆祝效果');
+      // 延迟显示庆祝效果，确保在星星效果结束后显示
+      const timer = setTimeout(() => {
+        console.log('显示庆祝效果');
+        setShowCelebration(true);
+        // 重置justCompletedTask状态，防止重复触发
+        setJustCompletedTask(false);
+      }, 1500); // 1.5秒后显示，确保星星动画先完成
+
+      return () => clearTimeout(timer);
+    }
+  }, [filteredTasks, showCelebration, isParent, justCompletedTask]);
 
   const handleCompleteTask = async (taskId: string) => {
+    console.log('开始完成任务:', taskId);
     // 获取当前任务的星星数量
     const task = tasks.find(t => t.id === taskId);
     const stars = task?.stars || 0;
-    
-    await completeTask(taskId);
-    
-    // 显示星星效果
+    console.log('任务星星数量:', stars);
+
+    // 标记刚刚完成了任务
+    setJustCompletedTask(true);
+
+    // 先设置星星数量，再显示星星效果
     setCurrentTaskStars(stars);
     setShowStarEffect(true);
+    console.log('已显示星星效果，星星数量:', stars);
 
-    // 检查是否所有任务都已完成
-    const pendingTasks = filteredTasks.filter(task => task.status === 'pending');
+    // 完成任务
+    await completeTask(taskId, selectedDate);
+    console.log('任务完成API调用完成');
+  };
 
-    if (pendingTasks.length === 0) {
-      setShowCelebration(true);
+  const handleUndoCompleteTask = async (taskId: string) => {
+    console.log('开始撤销完成任务:', taskId);
+    try {
+      await updateTaskStatus(taskId, 'pending', selectedDate);
+      console.log('任务撤销完成');
+    } catch (error) {
+      console.error('撤销完成任务失败:', error);
+      alert('撤销完成任务失败，请重试');
     }
   };
 
@@ -85,7 +168,7 @@ const TaskPage: React.FC = () => {
 
   const confirmDeleteTask = async () => {
     if (taskToDelete) {
-      await removeTask(taskToDelete);
+      await removeTask(taskToDelete, selectedDate);
       setTaskToDelete(null);
       setShowDeleteConfirm(false);
     }
@@ -97,6 +180,7 @@ const TaskPage: React.FC = () => {
     setEditDescription(task.description || '');
     setEditCategory(task.category || '学习');
     setEditStars(task.stars);
+    setEditTaskDate(task.taskDate);
   };
 
   const handleSaveEdit = async () => {
@@ -109,13 +193,15 @@ const TaskPage: React.FC = () => {
       stars: editStars,
       createdBy: currentUser!.id,
       assignedTo: tasks.find(t => t.id === editingTask)?.assignedTo || '',
-    });
-    await removeTask(editingTask);
+      taskDate: editTaskDate,
+    }, selectedDate);
+    await removeTask(editingTask, selectedDate);
     setEditingTask(null);
     setEditTitle('');
     setEditDescription('');
     setEditCategory('学习');
     setEditStars(1);
+    setEditTaskDate(new Date().toISOString().split('T')[0]);
   };
 
   const handleCancelEdit = () => {
@@ -124,10 +210,11 @@ const TaskPage: React.FC = () => {
     setEditDescription('');
     setEditCategory('学习');
     setEditStars(1);
+    setEditTaskDate(new Date().toISOString().split('T')[0]);
   };
 
   const pendingTasks = filteredTasks.filter(task => task.status === 'pending');
-  const completedTasks = filteredTasks.filter(task => task.status === 'completed');
+  const completedTasks = filteredTasks.filter(task => task.status === 'completed').sort((a, b) => new Date(b.taskDate).getTime() - new Date(a.taskDate).getTime());
 
   return (
     <div className="max-w-4xl mx-auto p-4">
@@ -140,12 +227,12 @@ const TaskPage: React.FC = () => {
             <p className="text-gray-600 mb-6">
               家长可以管理任务，但不需要完成自己的任务。
             </p>
-            <div className="flex space-x-3">
+            <div className="flex space-x-3 justify-center">
               <button
                 onClick={() => setShowAddTask(!showAddTask)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
               >
-                {showAddTask ? '取消' : '添加任务'}
+               添加任务
               </button>
               <button
                 onClick={() => setShowManageChildren(true)}
@@ -182,9 +269,31 @@ const TaskPage: React.FC = () => {
             </div>
           )}
           <div>
-            <h2 className="text-xl font-semibold mb-4 text-gray-700">
-              家庭任务管理
-            </h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-700">
+                任务管理
+              </h2>
+              <div className="flex items-center space-x-2">
+                <label className="text-sm font-medium text-gray-700">选择日期:</label>
+                <button
+                  onClick={() => setParentDatePickerVisible(true)}
+                  className="border rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {selectedDate.toLocaleDateString('zh-CN')}
+                </button>
+                <Picker
+                  columns={[years, months, days]}
+                  visible={parentDatePickerVisible}
+                  onClose={() => setParentDatePickerVisible(false)}
+                  value={[selectedDate.getFullYear(), selectedDate.getMonth() + 1, selectedDate.getDate()]}
+                  onConfirm={(value) => {
+                    console.log(value);
+                    setSelectedDate(new Date(value[0], value[1] -1 , value[2]));
+                    setParentDatePickerVisible(false);
+                  }}
+                />
+              </div>
+            </div>
             <div className="space-y-3">
               {pendingTasks.length === 0 && completedTasks.length === 0 ? (
                 <div className="text-center py-8 text-gray-500 bg-white rounded-lg shadow-md">
@@ -244,18 +353,43 @@ const TaskPage: React.FC = () => {
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 />
                               </div>
-                              <div className="flex space-x-2">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">任务日期</label>
                                 <button
-                                  onClick={handleSaveEdit}
-                                  className="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
+                                  onClick={() => setEditDatePickerVisible(true)}
+                                  className="w-full border rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-left"
                                 >
-                                  保存
+                                  {editTaskDate}
                                 </button>
+                                <Picker
+                                  columns={[years, months, days]}
+                                  visible={editDatePickerVisible}
+                                  onClose={() => setEditDatePickerVisible(false)}
+                                  value={(() => {
+                                    const [year, month, day] = editTaskDate.split('-').map(Number);
+                                    return [year, month, day];
+                                  })()}
+                                  onConfirm={(value) => {
+                                    const year = value[0];
+                                    const month = String(value[1]).padStart(2, '0');
+                                    const day = String(value[2]).padStart(2, '0');
+                                    setEditTaskDate(`${year}-${month}-${day}`);
+                                    setEditDatePickerVisible(false);
+                                  }}
+                                />
+                              </div>
+                              <div className="flex space-x-2">
                                 <button
                                   onClick={handleCancelEdit}
                                   className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
                                 >
                                   取消
+                                </button>
+                                <button
+                                  onClick={handleSaveEdit}
+                                  className="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
+                                >
+                                  保存
                                 </button>
                               </div>
                             </div>
@@ -354,7 +488,8 @@ const TaskPage: React.FC = () => {
           <AddTaskModal
             isOpen={showAddTask}
             onClose={() => setShowAddTask(false)}
-            onAddTask={async (title, description, category, stars, assignedTo) => {
+            selectedDate={selectedDate}
+            onAddTask={async (title, description, category, stars, assignedTo, taskDate) => {
               await addTask({
                 title,
                 description,
@@ -363,7 +498,8 @@ const TaskPage: React.FC = () => {
                 stars,
                 createdBy: currentUser!.id,
                 assignedTo,
-              });
+                taskDate,
+              }, selectedDate);
             }}
             isLoading={isLoading}
             children={children}
@@ -404,7 +540,7 @@ const TaskPage: React.FC = () => {
             }}
             onConfirm={confirmDeleteTask}
             title="确认删除"
-            message="确定要删除这个目标吗？删除后无法恢复。"
+            message="确定要删除这个任务吗？删除后无法恢复。"
             confirmText="删除"
             cancelText="取消"
             isLoading={isLoading}
@@ -412,20 +548,35 @@ const TaskPage: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">
-              今日目标
-            </h1>
-          </div>
 
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold mb-4 text-gray-700">
-            待完成目标
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-700">
+              待完成任务
+            </h2>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setChildDatePickerVisible(true)}
+                className="border rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {selectedDate.toLocaleDateString('zh-CN')}
+              </button>
+              <Picker
+                columns={[years, months, days]}
+                visible={childDatePickerVisible}
+                onClose={() => setChildDatePickerVisible(false)}
+                value={[selectedDate.getFullYear(), selectedDate.getMonth() + 1, selectedDate.getDate()]}
+                onConfirm={(value) => {
+                  setSelectedDate(new Date(value[0], value[1] -1 , value[2]));
+                  setChildDatePickerVisible(false);
+                }}
+              />
+            </div>
+          </div>
           {pendingTasks.length === 0 ? (
             <div className="text-center py-8 text-gray-500 bg-white rounded-lg shadow-md">
-              <p>暂无待完成目标</p>
+              <p>暂无待完成任务</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -475,11 +626,11 @@ const TaskPage: React.FC = () => {
 
         <div>
           <h2 className="text-xl font-semibold mb-4 text-gray-700">
-            已完成目标
+            已完成任务
           </h2>
           {completedTasks.length === 0 ? (
             <div className="text-center py-8 text-gray-500 bg-white rounded-lg shadow-md">
-              <p>暂无已完成目标</p>
+              <p>暂无已完成任务</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -509,15 +660,26 @@ const TaskPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    {isParent && (
-                      <button
-                        onClick={() => handleDeleteTask(task.id)}
-                        disabled={isLoading}
-                        className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors ml-4"
-                      >
-                        删除
-                      </button>
-                    )}
+                    <div className="flex items-center space-x-2 ml-4">
+                      {!isParent && (
+                        <button
+                          onClick={() => handleUndoCompleteTask(task.id)}
+                          disabled={isLoading}
+                          className="bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors"
+                        >
+                          撤销
+                        </button>
+                      )}
+                      {isParent && (
+                        <button
+                          onClick={() => handleDeleteTask(task.id)}
+                          disabled={isLoading}
+                          className="bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors"
+                        >
+                          删除
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -536,6 +698,7 @@ const TaskPage: React.FC = () => {
           starsCount={currentTaskStars}
           onComplete={() => setShowStarEffect(false)}
         />
+        {console.log('TaskPage - StarEffect props:', { showStarEffect, currentTaskStars })}
         </>
       )}
     </div>

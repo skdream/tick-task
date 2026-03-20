@@ -26,6 +26,7 @@ export interface Task {
   completedBy?: string;
   familyId: string;
   assignedTo?: string;
+  taskDate: string;
 }
 
 // 星星日志类型

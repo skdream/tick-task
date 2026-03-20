@@ -1,5 +1,7 @@
+import dayjs from 'dayjs';
 import { createClient } from './supabase/client';
 import { User, Task, StarLog, Family, ApiResponse } from '@/types';
+
 
 // 登录有效期（毫秒）- 30天
 const LOGIN_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000;
@@ -250,7 +252,7 @@ export const deleteChild = async (id: string): Promise<boolean> => {
 };
 
 // 获取任务列表
-export const getTasks = async (): Promise<ApiResponse<Task[]>> => {
+export const getTasks = async (dateFilter?: Date): Promise<ApiResponse<Task[]>> => {
   const supabase = createClient();
   const user = getCurrentUser();
 
@@ -258,11 +260,18 @@ export const getTasks = async (): Promise<ApiResponse<Task[]>> => {
     throw new Error('未登录');
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('tasks')
     .select('*')
-    .eq('family_id', user.familyId)
-    .order('created_at', { ascending: false });
+    .eq('family_id', user.familyId);
+
+  // 如果提供了日期过滤条件，则只返回该日期的任务
+  if (dateFilter) {
+    const dateStr = dayjs(dateFilter).format('YYYY-MM-DD');
+    query = query.eq('task_date', dateStr);
+  }
+
+  const { data, error } = await query.order('task_date', { ascending: true });
 
   if (error) {
     console.error('获取任务列表失败:', error);
@@ -281,7 +290,8 @@ export const getTasks = async (): Promise<ApiResponse<Task[]>> => {
     createdBy: t.created_by,
     completedBy: t.completed_by,
     familyId: t.family_id,
-    assignedTo: t.assigned_to
+    assignedTo: t.assigned_to,
+    taskDate: dayjs(t.task_date).format('YYYY-MM-DD')
   })) };
 };
 
@@ -308,7 +318,8 @@ export const createTask = async (task: Omit<Task, 'id' | 'createdAt' | 'familyId
       stars: task.stars,
       created_by: task.createdBy,
       family_id: user.familyId,
-      assigned_to: task.assignedTo
+      assigned_to: task.assignedTo,
+      task_date: task.taskDate
     })
     .select()
     .single();
@@ -317,6 +328,10 @@ export const createTask = async (task: Omit<Task, 'id' | 'createdAt' | 'familyId
     console.error('创建任务失败:', error);
     throw error;
   }
+
+
+  // data.task_date 转换为东八区时间
+  
 
   return { data: {
     id: data.id,
@@ -330,7 +345,8 @@ export const createTask = async (task: Omit<Task, 'id' | 'createdAt' | 'familyId
     createdBy: data.created_by,
     completedBy: data.completed_by,
     familyId: data.family_id,
-    assignedTo: data.assigned_to
+    assignedTo: data.assigned_to,
+    taskDate: dayjs(data.task_date).format('YYYY-MM-DD')
   }};
 };
 
@@ -359,9 +375,10 @@ export const updateTaskStatus = async (taskId: string, status: 'pending' | 'comp
     throw new Error('只有孩子可以标记任务为完成');
   }
 
-  // 只有家长可以将任务重置为待完成
-  if (status === 'pending' && user.role !== 'parent') {
-    throw new Error('只有家长可以将任务重置为待完成');
+  // 允许孩子和家长都可以将任务重置为待完成
+  // 孩子可以撤销自己完成的任务
+  if (status === 'pending' && user.role !== 'parent' && user.role !== 'child') {
+    throw new Error('只有孩子或家长可以将任务重置为待完成');
   }
 
   const updateData: any = {
@@ -369,7 +386,7 @@ export const updateTaskStatus = async (taskId: string, status: 'pending' | 'comp
   };
 
   if (status === 'completed') {
-    updateData.completed_at = new Date().toISOString();
+    updateData.completed_at = dayjs().format('YYYY-MM-DD HH:mm:ss');
     updateData.completed_by = user.id;
   } else {
     updateData.completed_at = null;
@@ -400,7 +417,8 @@ export const updateTaskStatus = async (taskId: string, status: 'pending' | 'comp
     createdBy: data.created_by,
     completedBy: data.completed_by,
     familyId: data.family_id,
-    assignedTo: data.assigned_to
+    assignedTo: data.assigned_to,
+    taskDate: dayjs(data.task_date).format('YYYY-MM-DD')
   }};
 };
 
@@ -431,7 +449,11 @@ export const deleteTask = async (taskId: string): Promise<ApiResponse<void>> => 
 };
 
 // 获取星星日志
-export const getStarLogs = async (): Promise<ApiResponse<StarLog[]>> => {
+export const getStarLogs = async (
+  userId?: string,
+  page: number = 1,
+  pageSize: number = 10
+): Promise<ApiResponse<{ data: StarLog[]; total: number; page: number; pageSize: number }>> => {
   const supabase = createClient();
   const user = getCurrentUser();
 
@@ -439,25 +461,46 @@ export const getStarLogs = async (): Promise<ApiResponse<StarLog[]>> => {
     throw new Error('未登录');
   }
 
-  const { data, error } = await supabase
+  // 计算分页偏移量
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  // 构建查询
+  let query = supabase
     .from('star_logs')
-    .select('*')
-    .eq('family_id', user.familyId)
-    .order('earned_at', { ascending: false });
+    .select('*', { count: 'exact' })
+    .eq('family_id', user.familyId);
+
+  // 如果指定了userId，则只查询该用户的星星日志
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+
+  // 执行查询
+  const { data, error, count } = await query
+    .order('earned_at', { ascending: false })
+    .range(from, to);
 
   if (error) {
     console.error('获取星星日志失败:', error);
-    return { data: [] };
+    return { data: { data: [], total: 0, page, pageSize } };
   }
 
-  return { data: data.map(l => ({
-    id: l.id,
-    userId: l.user_id,
-    taskId: l.task_id,
-    stars: l.stars,
-    earnedAt: new Date(l.earned_at),
-    familyId: l.family_id
-  })) };
+  return {
+    data: {
+      data: data.map(l => ({
+        id: l.id,
+        userId: l.user_id,
+        taskId: l.task_id,
+        stars: l.stars,
+        earnedAt: new Date(l.earned_at),
+        familyId: l.family_id
+      })),
+      total: count || 0,
+      page,
+      pageSize
+    }
+  };
 };
 
 // 获取用户星星总数
