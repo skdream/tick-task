@@ -10,7 +10,7 @@ interface Child {
 interface ManageChildrenModalProps {
   isOpen: boolean;
   onClose: () => void;
-  children: Child[];
+  childOptions: Child[];
   onAddChild: (name: string, password: string) => Promise<void>;
   onEditChild: (id: string, name: string, password: string) => Promise<void>;
   onDeleteChild: (id: string) => Promise<void>;
@@ -20,7 +20,7 @@ interface ManageChildrenModalProps {
 const ManageChildrenModal: React.FC<ManageChildrenModalProps> = ({
   isOpen,
   onClose,
-  children,
+  childOptions,
   onAddChild,
   onEditChild,
   onDeleteChild,
@@ -154,10 +154,10 @@ const ManageChildrenModal: React.FC<ManageChildrenModalProps> = ({
 
           {/* 孩子列表 */}
           <div className="space-y-3">
-            {children.length === 0 ? (
+            {childOptions.length === 0 ? (
               <p className="text-center text-gray-500 py-4">暂无孩子</p>
             ) : (
-              children.map((child) => (
+              childOptions.map((child) => (
                 <div
                   key={child.id}
                   className="bg-white border border-gray-200 rounded-lg p-4"

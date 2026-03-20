@@ -10,7 +10,8 @@ import CelebrationEffect from './CelebrationEffect';
 import StarEffect from './StarEffect';
 import ManageChildrenModal from './ManageChildrenModal';
 import { Picker } from 'antd-mobile';
-import dayjs from 'dayjs';
+import { useRefreshData, useCelebrationEffect } from '@/hooks';
+
 
 
 const TaskPage: React.FC = () => {
@@ -76,59 +77,18 @@ const TaskPage: React.FC = () => {
     }
   }, [isParent, children, selectedChildId]);
 
-  // 初始化时刷新数据
-  useEffect(() => {
-    if (currentUser) {
-      refreshData(selectedDate);
-    }
-  }, [currentUser]);
-
-  // 当selectedDate变化时刷新数据
-  useEffect(() => {
-    refreshData(selectedDate);
-  }, [selectedDate]);
-
-  // 添加调试日志
-  useEffect(() => {
-    console.log('=== 任务状态调试 ===');
-    console.log('当前用户:', currentUser?.id, currentUser?.name, currentUser?.role);
-    console.log('所有任务数量:', tasks.length);
-    console.log('过滤后的任务数量:', filteredTasks.length);
-    console.log('待完成任务:', filteredTasks.filter(task => task.status === 'pending').map(t => ({id: t.id, title: t.title, status: t.status})));
-    console.log('已完成任务:', filteredTasks.filter(task => task.status === 'completed').map(t => ({id: t.id, title: t.title, status: t.status})));
-    console.log('showCelebration状态:', showCelebration);
-    console.log('showStarEffect状态:', showStarEffect);
-    console.log('===================');
-  }, [currentUser, tasks, filteredTasks, showCelebration, showStarEffect]);
+  useRefreshData(refreshData, currentUser, selectedDate);
 
   // 监听任务状态变化，当所有任务都完成时显示庆祝效果
-  useEffect(() => {
-    const pendingTasks = filteredTasks.filter(task => task.status === 'pending');
-    console.log('检查庆祝效果条件:', {
-      pendingTasksCount: pendingTasks.length,
-      filteredTasksCount: filteredTasks.length,
-      showStarEffect,
-      showCelebration,
-      isParent,
-      justCompletedTask
-    });
+  useCelebrationEffect(
+    filteredTasks,
+    isParent,
+    justCompletedTask,
+    () => setShowCelebration(true),
+    () => setJustCompletedTask(false)
+  );
 
-    // 只有当有任务且所有任务都已完成，并且当前没有显示庆祝效果时才触发
-    // 注意：只有孩子完成所有任务时才显示庆祝效果，家长不需要
-    // 并且只有在刚刚完成任务时才显示庆祝效果，而不是在页面加载时
-    if (pendingTasks.length === 0 && filteredTasks.length > 0 && !showCelebration && !isParent && justCompletedTask) {
-      console.log('所有任务已完成，准备显示庆祝效果');
-      // 延迟显示庆祝效果，确保在星星效果结束后显示
-      const timer = setTimeout(() => {
-        console.log('显示庆祝效果');
-        setShowCelebration(true);
-        // 重置justCompletedTask状态，防止重复触发
-        setJustCompletedTask(false);
-      }, 1500); // 1.5秒后显示，确保星星动画先完成
 
-      return () => clearTimeout(timer);
-    }
-  }, [filteredTasks, showCelebration, isParent, justCompletedTask]);
 
   const handleCompleteTask = async (taskId: string) => {
     console.log('开始完成任务:', taskId);
@@ -505,7 +465,7 @@ const TaskPage: React.FC = () => {
               }, selectedDate);
             }}
             isLoading={isLoading}
-            children={children}
+            userOptions={children}
           />
 
           <CelebrationEffect
@@ -522,7 +482,7 @@ const TaskPage: React.FC = () => {
           <ManageChildrenModal
             isOpen={showManageChildren}
             onClose={() => setShowManageChildren(false)}
-            children={children}
+            childOptions={children}
             onAddChild={async (name, password) => {
               await addChild(name, password);
             }}

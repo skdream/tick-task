@@ -81,6 +81,7 @@ export const mockTasks: Task[] = [
     status: 'pending',
     stars: 3,
     createdAt: new Date('2024-01-15'),
+    taskDate:'2024-01-15',
     createdBy: 'user1', // 张家长
     familyId: 'family1',
     assignedTo: 'user2', // 小明
@@ -94,6 +95,7 @@ export const mockTasks: Task[] = [
     stars: 2,
     createdAt: new Date('2024-01-15'),
     completedAt: new Date('2024-01-15'),
+    taskDate:'2024-01-15',
     createdBy: 'user1', // 张家长
     completedBy: 'user2', // 小明
     familyId: 'family1',
@@ -107,6 +109,7 @@ export const mockTasks: Task[] = [
     status: 'pending',
     stars: 2,
     createdAt: new Date('2024-01-15'),
+    taskDate:'2024-01-15',
     createdBy: 'user1', // 张家长
     familyId: 'family1',
     assignedTo: 'user5', // 小红
@@ -119,6 +122,7 @@ export const mockTasks: Task[] = [
     status: 'pending',
     stars: 2,
     createdAt: new Date('2024-01-15'),
+    taskDate:'2024-01-15',
     createdBy: 'user1', // 张家长
     familyId: 'family1',
     assignedTo: 'user2', // 小明
@@ -129,6 +133,7 @@ export const mockTasks: Task[] = [
     description: '练习30分钟钢琴',
     category: '运动',
     status: 'completed',
+    taskDate:'2024-01-15',
     stars: 3,
     createdAt: new Date('2024-01-15'),
     completedAt: new Date('2024-01-15'),
@@ -144,6 +149,7 @@ export const mockTasks: Task[] = [
     description: '完成作文练习',
     category: '学习',
     status: 'completed',
+    taskDate:'2024-01-15',
     stars: 3,
     createdAt: new Date('2024-01-15'),
     completedAt: new Date('2024-01-15'),
@@ -158,6 +164,7 @@ export const mockTasks: Task[] = [
     description: '帮忙洗碗和打扫卫生',
     category: '家务',
     status: 'pending',
+    taskDate:'2024-01-15',  
     stars: 2,
     createdAt: new Date('2024-01-15'),
     createdBy: 'user3', // 李家长
@@ -169,7 +176,8 @@ export const mockTasks: Task[] = [
     title: '完成数学练习题',
     description: '完成第4章练习题',
     category: '学习',
-    status: 'pending',
+    status: 'pending',  
+    taskDate:'2024-01-15',
     stars: 3,
     createdAt: new Date('2024-01-15'),
     createdBy: 'user3', // 李家长
@@ -182,10 +190,11 @@ export const mockTasks: Task[] = [
     description: '背诵3首唐诗',
     category: '阅读',
     status: 'completed',
+    taskDate:'2024-01-15',
     stars: 2,
     createdAt: new Date('2024-01-15'),
     completedAt: new Date('2024-01-15'),
-    createdBy: 'user3', // 李家长
+ createdBy: 'user3', // 李家长
     completedBy: 'user6', // 小芳
     familyId: 'family2',
     assignedTo: 'user6', // 小芳
@@ -195,7 +204,8 @@ export const mockTasks: Task[] = [
     title: '画画',
     description: '完成一幅画作',
     category: '其他',
-    status: 'pending',
+    status: 'pending',  
+    taskDate:'2024-01-15',
     stars: 2,
     createdAt: new Date('2024-01-15'),
     createdBy: 'user3', // 李家长

@@ -6,7 +6,7 @@ interface AddTaskModalProps {
   onClose: () => void;
   onAddTask: (title: string, description: string, category: string, stars: number, assignedTo: string, taskDate: string) => Promise<void>;
   isLoading?: boolean;
-  children: Array<{ id: string; name: string; avatar?: string }>;
+  userOptions: Array<{ id: string; name: string; avatar?: string }>;
   selectedDate?: Date;
 }
 
@@ -15,7 +15,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   onClose,
   onAddTask,
   isLoading = false,
-  children,
+  userOptions,
   selectedDate = new Date(),
 }) => {
   const [title, setTitle] = useState('');
@@ -24,14 +24,23 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const [stars, setStars] = useState(1);
   const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [taskDate, setTaskDate] = useState<Date>(selectedDate);
-
-  // 当children数据加载完成后，自动设置selectedChildId为第一个孩子的ID
-  useEffect(() => {
-    if (children.length > 0 && !selectedChildId) {
-      setSelectedChildId(children[0].id);
-    }
-  }, [children, selectedChildId]);
   const [datePickerVisible, setDatePickerVisible] = useState(false);
+
+  // 当userOptions数据加载完成后，自动设置selectedChildId为第一个孩子的ID
+  useEffect(() => {
+    if (userOptions.length > 0 && !selectedChildId) {
+      setSelectedChildId(userOptions[0].id);
+    }
+  }, [userOptions, selectedChildId]);
+
+  useEffect(() => {
+    setTaskDate(selectedDate);
+    setSelectedChildId(userOptions[0]?.id || '');
+  }, [selectedDate, userOptions]);
+
+  useEffect(() => {
+    setSelectedChildId(userOptions[0]?.id || '');
+  }, [userOptions]);
 
   const categories = ['学习', '阅读', '家务', '运动', '其他'];
 
@@ -58,7 +67,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
     setDescription('');
     setCategory('学习');
     setStars(1);
-    setSelectedChildId(children[0]?.id || '');
+    setSelectedChildId(userOptions[0]?.id || '');
     setTaskDate(selectedDate);
     onClose();
   };
@@ -68,7 +77,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
     setDescription('');
     setCategory('学习');
     setStars(1);
-    setSelectedChildId(children[0]?.id || '');
+    setSelectedChildId(userOptions[0]?.id || '');
     setTaskDate(selectedDate);
     onClose();
   };
@@ -187,7 +196,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
               onChange={(e) => setSelectedChildId(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              {children.map(child => (
+              {userOptions.map(child => (
                 <option key={child.id} value={child.id}>
                   {child.avatar} {child.name}
                 </option>
