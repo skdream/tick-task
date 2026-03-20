@@ -17,8 +17,8 @@ const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="96" fill="url(#bg)"/>
-  <text x="256" y="340" text-anchor="middle" font-size="280" fill="white">⭐</text>
-  <text x="256" y="430" text-anchor="middle" font-size="80" fill="white" font-weight="bold">任务</text>
+  <text x="256" y="340" text-anchor="middle" font-size="280" fill="white">🦆</text>
+  <text x="256" y="430" text-anchor="middle" font-size="80" fill="white" font-weight="bold">打卡鸭</text>
 </svg>`;
 
 async function generateIcons() {
