@@ -168,7 +168,7 @@ const TaskPage: React.FC = () => {
 
   const confirmDeleteTask = async () => {
     if (taskToDelete) {
-      await removeTask(taskToDelete, selectedDate);
+      await removeTask(taskToDelete);
       setTaskToDelete(null);
       setShowDeleteConfirm(false);
     }
@@ -195,7 +195,7 @@ const TaskPage: React.FC = () => {
       assignedTo: tasks.find(t => t.id === editingTask)?.assignedTo || '',
       taskDate: editTaskDate,
     }, selectedDate);
-    await removeTask(editingTask, selectedDate);
+    await removeTask(editingTask);
     setEditingTask(null);
     setEditTitle('');
     setEditDescription('');
