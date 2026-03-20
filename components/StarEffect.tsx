@@ -41,8 +41,6 @@ const StarEffect: React.FC<StarEffectProps> = ({ show, onComplete, starsCount })
 
   return (
     <div className="fixed inset-0 pointer-events-none z-50">
-      {/* 显示获得的星星数量 */}
-      {console.log('StarEffect - starsCount:', starsCount, 'starsCount > 0:', starsCount > 0)}
       {starsCount !== undefined && starsCount > 0 && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-4xl md:text-6xl font-bold text-yellow-500 animate-bounce">
