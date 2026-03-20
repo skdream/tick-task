@@ -139,7 +139,9 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
               onClose={() => setDatePickerVisible(false)}
               value={[taskDate.getFullYear(), taskDate.getMonth() + 1, taskDate.getDate()]}
               onConfirm={(value) => {
-                setTaskDate(new Date(value[0], value[1] - 1, value[2]));
+                if (value[0] && value[1] && value[2]) {
+                  setTaskDate(new Date(Number(value[0]), Number(value[1]) - 1, Number(value[2])));
+                }
                 setDatePickerVisible(false);
               }}
             />

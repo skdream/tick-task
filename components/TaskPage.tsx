@@ -287,8 +287,9 @@ const TaskPage: React.FC = () => {
                   onClose={() => setParentDatePickerVisible(false)}
                   value={[selectedDate.getFullYear(), selectedDate.getMonth() + 1, selectedDate.getDate()]}
                   onConfirm={(value) => {
-                    console.log(value);
-                    setSelectedDate(new Date(value[0], value[1] -1 , value[2]));
+                    if (value[0] && value[1] && value[2]) {
+                      setSelectedDate(new Date(Number(value[0]), Number(value[1]) - 1, Number(value[2])));
+                    }
                     setParentDatePickerVisible(false);
                   }}
                 />
@@ -370,10 +371,12 @@ const TaskPage: React.FC = () => {
                                     return [year, month, day];
                                   })()}
                                   onConfirm={(value) => {
-                                    const year = value[0];
-                                    const month = String(value[1]).padStart(2, '0');
-                                    const day = String(value[2]).padStart(2, '0');
-                                    setEditTaskDate(`${year}-${month}-${day}`);
+                                    if (value[0] && value[1] && value[2]) {
+                                      const year = value[0];
+                                      const month = String(value[1]).padStart(2, '0');
+                                      const day = String(value[2]).padStart(2, '0');
+                                      setEditTaskDate(`${year}-${month}-${day}`);
+                                    }
                                     setEditDatePickerVisible(false);
                                   }}
                                 />
@@ -568,7 +571,9 @@ const TaskPage: React.FC = () => {
                 onClose={() => setChildDatePickerVisible(false)}
                 value={[selectedDate.getFullYear(), selectedDate.getMonth() + 1, selectedDate.getDate()]}
                 onConfirm={(value) => {
-                  setSelectedDate(new Date(value[0], value[1] -1 , value[2]));
+                  if (value[0] && value[1] && value[2]) {
+                    setSelectedDate(new Date(Number(value[0]), Number(value[1]) - 1, Number(value[2])));
+                  }
                   setChildDatePickerVisible(false);
                 }}
               />
