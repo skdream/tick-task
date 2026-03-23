@@ -362,7 +362,7 @@ const TaskPage: React.FC = () => {
                               <div className="flex-1">
                                 <h3 className="font-semibold text-gray-800">{task.title}</h3>
                                 {task.description && (
-                                  <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                                  <p className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: task.description }}></p>
                                 )}
                                 <div className="mt-2 flex items-center space-x-2">
                                   {task.category && (
@@ -424,9 +424,10 @@ const TaskPage: React.FC = () => {
                                 {task.title}
                               </h3>
                               {task.description && (
-                                <p className="text-sm text-gray-600 mt-1 line-through">
-                                  {task.description}
-                                </p>
+                                // <p className="text-sm text-gray-600 mt-1 line-through">
+                                //   {task.description}
+                                // </p>
+                                <p className="text-sm text-gray-600 mt-1 line-through" dangerouslySetInnerHTML={{ __html: task.description }}></p>
                               )}
                               <div className="mt-2 flex items-center space-x-2">
                                 <span className="text-yellow-500 font-bold">
@@ -554,7 +555,7 @@ const TaskPage: React.FC = () => {
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-800">{task.title}</h3>
                       {task.description && (
-                        <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                        <p className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: task.description }}></p>
                       )}
                       <div className="mt-2 flex items-center space-x-2">
                         <span className="text-yellow-500 font-bold">
@@ -610,8 +611,8 @@ const TaskPage: React.FC = () => {
                         {task.title}
                       </h3>
                       {task.description && (
-                        <p className="text-sm text-gray-600 mt-1 line-through">
-                          {task.description}
+                        <p className="text-sm text-gray-600 mt-1 line-through"  dangerouslySetInnerHTML={{ __html: task.description }}>
+                          
                         </p>
                       )}
                       <div className="mt-2 flex items-center space-x-2">
