@@ -21,15 +21,9 @@ export function useRefreshData(
 
   useEffect(() => {
     if (currentUser && refreshDataRef.current) {
-      refreshDataRef.current(selectedDateRef.current);
+      refreshDataRef.current(selectedDate);
     }
-  }, [currentUser]);
-
-  useEffect(() => {
-    if (refreshDataRef.current) {
-      refreshDataRef.current(selectedDateRef.current);
-    }
-  }, [selectedDate]);
+  }, [currentUser, selectedDate]);
 
   return { refresh };
 }

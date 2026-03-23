@@ -32,7 +32,7 @@ interface AppContextType {
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'familyId'>, dateFilter?: Date) => Promise<void>;
   completeTask: (taskId: string, dateFilter?: Date) => Promise<void>;
   updateTaskStatus: (taskId: string, status: 'pending' | 'completed', dateFilter?: Date) => Promise<void>;
-  removeTask: (taskId: string) => Promise<void>;
+  removeTask: (taskId: string, dateFilter?: Date) => Promise<void>;
   addChild: (name: string, password: string) => Promise<boolean>;
   editChild: (id: string, name: string, password: string) => Promise<boolean>;
   removeChild: (id: string) => Promise<boolean>;
