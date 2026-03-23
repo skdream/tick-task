@@ -381,6 +381,50 @@ export const updateTaskStatus = async (taskId: string, status: 'pending' | 'comp
     throw new Error('只有孩子或家长可以将任务重置为待完成');
   }
 
+  // 检查任务是否是当天任务
+  const taskDate = dayjs(existingTask.taskDate);
+  const today = dayjs();
+  const isToday = taskDate.isSame(today, 'day');
+
+  // 处理星星日志：完成任务时添加星星，撤回任务时扣除星星
+  // if (existingTask.status === 'pending' && status === 'completed') {
+  //   // 完成任务：添加星星日志
+  //   // 只有当天任务在20:30前完成才能获得星星
+  //   if (isToday) {
+  //     const currentHour = dayjs().hour();
+  //     const currentMinute = dayjs().minute();
+  //     const canEarnStars = currentHour < 20 || (currentHour === 20 && currentMinute < 30);
+
+  //     if (canEarnStars) {
+  //       const { error: starLogError } = await supabase
+  //         .from('star_logs')
+  //         .insert({
+  //           user_id: user.id,
+  //           task_id: taskId,
+  //           stars: existingTask.stars,
+  //           earned_at: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+  //           family_id: user.familyId
+  //         });
+
+  //       if (starLogError) {
+  //         console.error('添加星星日志失败:', starLogError);
+  //         throw starLogError;
+  //       }
+  //     }
+  //   }
+  // } else if (existingTask.status === 'completed' && status === 'pending') {
+  //   // 撤回任务：删除对应的星星日志
+  //   const { error: deleteStarLogError } = await supabase
+  //     .from('star_logs')
+  //     .delete()
+  //     .eq('task_id', taskId)
+  //     .eq('user_id', existingTask.completed_by || user.id);
+
+  //   if (deleteStarLogError) {
+  //     console.error('删除星星日志失败:', deleteStarLogError);
+  //   }
+  // }
+
   const updateData: any = {
     status
   };

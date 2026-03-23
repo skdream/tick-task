@@ -141,17 +141,21 @@ JOIN tasks t ON sl.task_id = t.id;
 -- ============================================
 
 -- 任务完成时自动创建星星记录的函数
+-- 只有在20:30前完成的任务才能获得星星
 CREATE OR REPLACE FUNCTION create_star_log_on_task_completion()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.status = 'completed' AND OLD.status = 'pending' THEN
-    INSERT INTO star_logs (user_id, task_id, stars, family_id)
-    VALUES (
-      NEW.completed_by,
-      NEW.id,
-      NEW.stars,
-      NEW.family_id
-    );
+    -- 检查当前时间是否在20:30之前
+    IF EXTRACT(HOUR FROM NOW()) < 20 OR (EXTRACT(HOUR FROM NOW()) = 20 AND EXTRACT(MINUTE FROM NOW()) < 30) THEN
+      INSERT INTO star_logs (user_id, task_id, stars, family_id)
+      VALUES (
+        NEW.completed_by,
+        NEW.id,
+        NEW.stars,
+        NEW.family_id
+      );
+    END IF;
   END IF;
   RETURN NEW;
 END;
@@ -171,6 +175,24 @@ CREATE TRIGGER trigger_create_star_log
 AFTER UPDATE OF status ON tasks
 FOR EACH ROW
 EXECUTE FUNCTION create_star_log_on_task_completion();
+
+-- 任务由已完成撤销为未完成时删除星星记录的函数
+CREATE OR REPLACE FUNCTION delete_star_log_on_task_revert()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD.status = 'completed' AND NEW.status = 'pending' THEN
+    DELETE FROM star_logs
+    WHERE task_id = OLD.id AND user_id = OLD.completed_by;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 创建撤销任务时删除星星记录的触发器
+CREATE TRIGGER trigger_delete_star_log_on_revert
+AFTER UPDATE OF status ON tasks
+FOR EACH ROW
+EXECUTE FUNCTION delete_star_log_on_task_revert();
 
 -- 为 families 表创建更新时间戳触发器
 CREATE TRIGGER update_families_updated_at

@@ -3,97 +3,33 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { StarLog } from '@/types';
+import { useChildren, useStarData, usePaginatedStarLogs } from '@/hooks';
 
 const StarPage: React.FC = () => {
   const { users, currentUser, tasks, getStarLogsPaginated, getUserTotalStars } = useApp();
-  const isParent = currentUser?.role === 'parent';
-  
-  const children = useMemo(() => 
-    users.filter(user => user.role === 'child' && user.familyId === currentUser?.familyId),
-    [users, currentUser?.familyId]
+  const { children, selectedUserId, setSelectedUserId, isParent } = useChildren(users, currentUser);
+
+  const { userStars, currentUserStars, refetchStars } = useStarData(
+    children,
+    currentUser,
+    selectedUserId,
+    getUserTotalStars
   );
-  
-  // 当 children 变化时，重新设置 selectedUserId
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
-
-  const [userStars, setUserStars] = useState<Record<string, number>>({});
-  const [currentUserStars, setCurrentUserStars] = useState(0);
-
-  // 当 children 变化时，自动设置 selectedUserId
-  useEffect(() => {
-    if (isParent && children.length > 0 && !selectedUserId) {
-      setSelectedUserId(children[0].id);
-    } else if (!isParent && currentUser?.id) {
-      setSelectedUserId(currentUser.id);
-    }
-  }, [children, isParent, currentUser?.id, selectedUserId]);
-
-  useEffect(() => {
-    const fetchCurrentUserStars = async () => {
-      if (!currentUser) return;
-
-      try {
-        if (!isParent) {
-          const result = await getUserTotalStars(currentUser.id);
-          setCurrentUserStars(result.data);
-          setUserStars(prev => ({ ...prev, [currentUser.id]: result.data }));
-        } else {
-          const starsMap: Record<string, number> = {};
-          for (const child of children) {
-            try {
-              const result = await getUserTotalStars(child.id);
-              starsMap[child.id] = result.data;
-            } catch (error) {
-              console.error(`获取孩子${child.name}的星星总数失败:`, error);
-              starsMap[child.id] = 0;
-            }
-          }
-          setUserStars(starsMap);
-          if (selectedUserId && starsMap[selectedUserId] !== undefined) {
-            setCurrentUserStars(starsMap[selectedUserId]);
-          }
-        }
-      } catch (error) {
-        console.error('获取星星总数失败:', error);
-        setCurrentUserStars(0);
-      }
-    };
-
-    fetchCurrentUserStars();
-  }, [currentUser, isParent, children, selectedUserId, getUserTotalStars]);
-
-  useEffect(() => {
-    if (isParent && selectedUserId && userStars[selectedUserId] !== undefined) {
-      setCurrentUserStars(userStars[selectedUserId]);
-    }
-  }, [selectedUserId, userStars, isParent]);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [paginatedLogs, setPaginatedLogs] = useState<StarLog[]>([]);
-  const [totalLogs, setTotalLogs] = useState(0);
   const itemsPerPage = 10;
-  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
-  useEffect(() => {
-    const fetchLogs = async () => {
-      setIsLoadingLogs(true);
-      try {
-        const result = await getStarLogsPaginated(selectedUserId, currentPage, itemsPerPage);
-        setPaginatedLogs(result.data);
-        setTotalLogs(result.total);
-      } catch (error) {
-        console.error('获取星星日志失败:', error);
-      } finally {
-        setIsLoadingLogs(false);
-      }
-    };
-
-    if (selectedUserId) {
-      fetchLogs();
-    }
-  }, [selectedUserId, currentPage, getStarLogsPaginated]);
-
-  const totalPages = Math.ceil(totalLogs / itemsPerPage);
+  const {
+    paginatedLogs,
+    totalLogs,
+    isLoadingLogs,
+    totalPages
+  } = usePaginatedStarLogs(
+    selectedUserId,
+    currentPage,
+    itemsPerPage,
+    getStarLogsPaginated
+  );
 
   const selectedUser = users.find(user => user.id === selectedUserId);
 
